@@ -31,35 +31,26 @@
     header { text-align: center; margin-bottom: 14px; }
     h1 { font-size: 1.5rem; font-weight: 800; letter-spacing: 0.5px; }
     .creator-name {ABDULBASIT 
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       color: #38bdf8;
-      margin-top: 4px;
+      margin-top: 2px;
       font-weight: 600;
     }
-    .levels {
-      display: flex;
-      gap: 8px;
-      margin: 10px 0;
-      justify-content: center;
-    }
-    .level-btn {
-      background: #334155;
-      color: var(--muted);
-      border: none;
-      padding: 6px 14px;
-      border-radius: 8px;
-      font-size: 0.85rem;
-      font-weight: 700;
-      cursor: pointer;
-    }
-    .level-btn.active {
-      background: #3b82f6;
-      color: white;
+    .level-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #fff;
+      padding: 5px 18px;
+      border-radius: 20px;
+      font-size: 1rem;
+      font-weight: 800;
+      margin-top: 10px;
+      box-shadow: 0 4px 10px rgba(245, 158, 11, 0.3);
     }
     .stats {
       display: flex;
       gap: 12px;
-      margin-top: 8px;
+      margin-top: 10px;
       justify-content: center;
     }
     .stat-box {
@@ -88,7 +79,7 @@
       gap: 6px;
     }
     .tile {
-      background: var(NUMBER MASTER15);
+      background: var(NUMBER MASTER);
       border-radius: 8px;
       display: flex;
       align-items: center;
@@ -104,20 +95,33 @@
     .controls {
       margin-top: 16px;
       display: flex;
-      gap: 12px;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
     }
     button.action-btn {
       background: #6366f1;
       color: white;
       border: none;
-      padding: 10px 20px;
+      padding: 10px 18px;
       border-radius: 10px;
       font-size: 0.95rem;
       font-weight: 700;
       cursor: pointer;
       box-shadow: 0 4px 12px rgba(99,102,241,0.4);
     }
-    button.action-btn:active { transform: scale(0.97); }
+    button.next-btn {
+      background: #10b981;
+      box-shadow: 0 4px 12px rgba(16,185,129,0.4);
+      display: none;
+    }
+    button.reset-btn {
+      background: #475569;
+      box-shadow: none;
+      font-size: 0.85rem;
+      padding: 10px 14px;
+    }
+    button:active { transform: scale(0.97); }
     .win-banner {
       margin-top: 12px;
       font-size: 1rem;
@@ -132,12 +136,8 @@
   <header>
     <h1>Number Master 15</h1>
     <div class="creator-name">Created by Abdul Basit</div>
+    <div class="level-badge" id="levelDisplay">Level 1</div>
 
-    <div class="levels">
-      <button class="level-btn active" onclick="setGridSize(3, this)">Easy (3x3)</button>
-      <button class="level-btn" onclick="setGridSize(4, this)">Medium (4x4)</button>
-      <button class="level-btn" onclick="setGridSize(5, this)">Hard (5x5)</button>
-    </div>
     <div class="stats">
       <div class="stat-box">
         <div class="stat-label">Moves</div>
@@ -157,11 +157,12 @@
   <div class="win-banner" id="winBanner"></div>
 
   <div class="controls">
-    <button class="action-btn" onclick="newGame()">New Game</button>
+    <button class="action-btn" onclick="startLevel(currentLevel)">Restart</button>
+    <button class="action-btn next-btn" id="nextBtn" onclick="nextLevel()">Next Level ➡️</button>
+    <button class="action-btn reset-btn" onclick="resetProgress()">Reset All</button>
   </div>
 
   <script>
-    // Audio Context for sound effects without needing external files
     let audioCtx = null;
     function initAudio() {
       if (!audioCtx) {
@@ -180,8 +181,8 @@
 
         if (type === 'move') {
           osc.type = 'sine';
-          osc.frequency.setValueAtTime(400, audioCtx.currentTime);
-          osc.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.05);
+          osc.frequency.setValueAtTime(420, audioCtx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(220, audioCtx.currentTime + 0.05);
           gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
           gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
           osc.start();
@@ -201,16 +202,17 @@
             o.stop(now + i * 0.1 + 0.2);
           });
         }
-      } catch (e) {
-        // Ignore audio errors if blocked by browser policy
-      }
+      } catch (e) {}
     }
 
     const boardEl = document.getElementById('board');
     const movesEl = document.getElementById('moves');
     const timerEl = document.getElementById('timer');
     const winBanner = document.getElementById('winBanner');
+    const levelDisplay = document.getElementById('levelDisplay');
+    const nextBtn = document.getElementById('nextBtn');
 
+    let currentLevel = parseInt(localStorage.getItem('nm_level')) || 1;
     let size = 3;
     let tiles = [];
     let moves = 0;
@@ -218,14 +220,14 @@
     let timerInterval = null;
     let gameActive = false;
 
-    function setGridSize(s, btn) {
-      playSound('move');
-      document.querySelectorAll('.level-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      size = s;
-      boardEl.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
-      boardEl.style.gridTemplateRows = `repeat(${size}, 1fr)`;
-      newGame();
+    function getLevelConfig(lvl) {
+      if (lvl === 1) return { grid: 3, shuffleMoves: 6 };
+      if (lvl === 2) return { grid: 3, shuffleMoves: 15 };
+      if (lvl === 3) return { grid: 3, shuffleMoves: 35 };
+      if (lvl === 4) return { grid: 4, shuffleMoves: 20 };
+      if (lvl === 5) return { grid: 4, shuffleMoves: 45 };
+      if (lvl === 6) return { grid: 4, shuffleMoves: 80 };
+      return { grid: 5, shuffleMoves: 60 + (lvl * 10) };
     }
 
     function formatTime(s) {
@@ -247,30 +249,6 @@
       timerInterval = null;
     }
 
-    function isSolvable(arr, n) {
-      let inv = 0;
-      let len = arr.length;
-      let emptyRow = 0;
-      for (let i = 0; i < len; i++) {
-        if (arr[i] === 0) {
-          emptyRow = Math.floor(i / n);
-          continue;
-        }
-        for (let j = i + 1; j < len; j++) {
-          if (arr[j] !== 0 && arr[i] > arr[j]) inv++;
-        }
-      }
-      if (n % 2 !== 0) {
-        return inv % 2 === 0;
-      } else {
-        if ((n - emptyRow) % 2 !== 0) {
-          return inv % 2 === 0;
-        } else {
-          return inv % 2 !== 0;
-        }
-      }
-    }
-
     function isSolved(arr) {
       let total = size * size;
       for (let i = 0; i < total - 1; i++) {
@@ -279,30 +257,49 @@
       return arr[total - 1] === 0;
     }
 
-    function newGame() {
-      playSound('move');
+    function startLevel(lvl) {
       stopTimer();
       seconds = 0;
       moves = 0;
       movesEl.textContent = '0';
       timerEl.textContent = '00:00';
       winBanner.textContent = '';
+      nextBtn.style.display = 'none';
       gameActive = true;
+
+      const config = getLevelConfig(lvl);
+      size = config.grid;
+      levelDisplay.textContent = `Level ${lvl} (${size}x${size})`;
 
       boardEl.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
       boardEl.style.gridTemplateRows = `repeat(${size}, 1fr)`;
 
       let total = size * size;
-      do {
-        tiles = [];
-        for (let i = 1; i < total; i++) tiles.push(i);
-        tiles.push(0);
+      tiles = [];
+      for (let i = 1; i < total; i++) tiles.push(i);
+      tiles.push(0);
 
-        for (let i = tiles.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [tiles[i], tiles[j]] = [tiles[j], tiles[i]];
-        }
-      } while (!isSolvable(tiles, size) || isSolved(tiles));
+      // Valid random moves from solved state guarantees solvability and scales difficulty
+      let lastEmpty = -1;
+      for (let step = 0; step < config.shuffleMoves; step++) {
+        const emptyIdx = tiles.indexOf(0);
+        const r = Math.floor(emptyIdx / size);
+        const c = emptyIdx % size;
+        const neighbors = [];
+        if (r > 0) neighbors.push(emptyIdx - size);
+        if (r < size - 1) neighbors.push(emptyIdx + size);
+        if (c > 0) neighbors.push(emptyIdx - 1);
+        if (c < size - 1) neighbors.push(emptyIdx + 1);
+
+        const validNeighbors = neighbors.filter(n => n !== lastEmpty);
+        const pick = validNeighbors[Math.floor(Math.random() * validNeighbors.length)];
+        lastEmpty = emptyIdx;
+        [tiles[emptyIdx], tiles[pick]] = [tiles[pick], tiles[emptyIdx]];
+      }
+
+      if (isSolved(tiles)) {
+        [tiles[total - 1], tiles[total - 2]] = [tiles[total - 2], tiles[total - 1]];
+      }
 
       render();
     }
@@ -342,8 +339,24 @@
           gameActive = false;
           stopTimer();
           playSound('win');
-          winBanner.textContent = `🎉 زبردست! آپ نے جیت لیا (${moves} چالیں)`;
+          winBanner.textContent = `🎉 زبردست! Level ${currentLevel} مکمل ہو گیا!`;
+          nextBtn.style.display = 'inline-block';
         }
+      }
+    }
+
+    function nextLevel() {
+      playSound('move');
+      currentLevel++;
+      localStorage.setItem('nm_level', currentLevel);
+      startLevel(currentLevel);
+    }
+
+    function resetProgress() {
+      if (confirm('کیا آپ دوبارہ Level 1 سے شروع کرنا چاہتے ہیں؟')) {
+        currentLevel = 1;
+        localStorage.setItem('nm_level', 1);
+        startLevel(1);
       }
     }
 
@@ -351,7 +364,7 @@
       navigator.serviceWorker.register('sw.js').catch(() => {});
     }
 
-    newGame();
+    startLevel(currentLevel);
   </script>
 </body>
 </html>
