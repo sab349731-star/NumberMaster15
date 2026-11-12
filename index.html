@@ -5,8 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#0f172a" />
   <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <title>NumberMaster15</title>
+  <title>NumberMaster Multi-Level</title>
   <link rel="manifest" href="manifest.json" />
   <style>
     :root {
@@ -29,79 +28,108 @@
       justify-content: center;
       padding: 16px;
     }
-    header { text-align: center; margin-bottom: 18px; }
-    h1 { font-size: 1.8rem; font-weight: 800; letter-spacing: 0.5px; }
+    header { text-align: center; margin-bottom: 14px; }
+    h1 { font-size: 1.6rem; font-weight: 800; letter-spacing: 0.5px; }
+    .levels {
+      display: flex;
+      gap: 8px;
+      margin: 10px 0;
+      justify-content: center;
+    }
+    .level-btn {
+      background: #334155;
+      color: var(--muted);
+      border: none;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .level-btn.active {
+      background: #3b82f6;
+      color: white;
+    }
     .stats {
       display: flex;
-      gap: 16px;
-      margin-top: 10px;
+      gap: 12px;
+      margin-top: 8px;
       justify-content: center;
     }
     .stat-box {
       background: var(--board);
-      padding: 8px 18px;
-      border-radius: 12px;
-      min-width: 100px;
+      padding: 6px 14px;
+      border-radius: 10px;
+      min-width: 80px;
     }
-    .stat-label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; }
-    .stat-val { font-size: 1.25rem; font-weight: 700; margin-top: 2px; }
-    .board {
-      width: min(90vw, 360px);
-      height: min(90vw, 360px);
+    .stat-label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; }
+    .stat-val { font-size: 1.1rem; font-weight: 700; margin-top: 2px; }
+    .board-container {
+      width: min(85vw, 340px);
+      height: min(85vw, 340px);
       background: var(--board);
-      padding: 10px;
+      padding: 8px;
       border-radius: 16px;
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      grid-template-rows: repeat(4, 1fr);
-      gap: 10px;
       box-shadow: 0 12px 30px rgba(0,0,0,0.4);
-    }
-    .tile {
-      background: var(--tile);
-      border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.6rem;
+    }
+    .board {
+      width: 100%;
+      height: 100%;
+      display: grid;
+      gap: 6px;
+    }
+    .tile {
+      background: var(--tile);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       font-weight: 800;
       cursor: pointer;
       transition: transform 0.1s ease, background 0.2s ease;
-      box-shadow: 0 4px 0 rgba(0,0,0,0.25);
+      box-shadow: 0 3px 0 rgba(0,0,0,0.2);
     }
     .tile:active { transform: scale(0.95); }
     .tile.correct { background: var(--tile-correct); }
     .tile.empty { background: transparent; box-shadow: none; cursor: default; }
     .controls {
-      margin-top: 20px;
+      margin-top: 16px;
       display: flex;
       gap: 12px;
     }
-    button {
+    button.action-btn {
       background: #6366f1;
       color: white;
       border: none;
-      padding: 12px 24px;
-      border-radius: 12px;
-      font-size: 1rem;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-size: 0.95rem;
       font-weight: 700;
       cursor: pointer;
       box-shadow: 0 4px 12px rgba(99,102,241,0.4);
     }
-    button:active { transform: scale(0.97); }
+    button.action-btn:active { transform: scale(0.97); }
     .win-banner {
-      margin-top: 16px;
-      font-size: 1.1rem;
+      margin-top: 12px;
+      font-size: 1rem;
       font-weight: 700;
       color: #34d399;
-      min-height: 26px;
+      min-height: 24px;
       text-align: center;
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>NumberMaster 15</h1>
+    <h1>NumberMaster</h1>
+    <div class="levels">
+      <button class="level-btn active" onclick="setGridSize(3, this)">Easy (3x3)</button>
+      <button class="level-btn" onclick="setGridSize(4, this)">Medium (4x4)</button>
+      <button class="level-btn" onclick="setGridSize(5, this)">Hard (5x5)</button>
+    </div>
     <div class="stats">
       <div class="stat-box">
         <div class="stat-label">Moves</div>
@@ -114,12 +142,14 @@
     </div>
   </header>
 
-  <div class="board" id="board"></div>
+  <div class="board-container">
+    <div class="board" id="board"></div>
+  </div>
 
   <div class="win-banner" id="winBanner"></div>
 
   <div class="controls">
-    <button onclick="newGame()">New Game</button>
+    <button class="action-btn" onclick="newGame()">New Game</button>
   </div>
 
   <script>
@@ -128,11 +158,21 @@
     const timerEl = document.getElementById('timer');
     const winBanner = document.getElementById('winBanner');
 
+    let size = 3;
     let tiles = [];
     let moves = 0;
     let seconds = 0;
     let timerInterval = null;
     let gameActive = false;
+
+    function setGridSize(s, btn) {
+      document.querySelectorAll('.level-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      size = s;
+      boardEl.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+      boardEl.style.gridTemplateRows = `repeat(${size}, 1fr)`;
+      newGame();
+    }
 
     function formatTime(s) {
       const m = String(Math.floor(s / 60)).padStart(2, '0');
@@ -153,22 +193,36 @@
       timerInterval = null;
     }
 
-    function isSolvable(arr) {
+    function isSolvable(arr, n) {
       let inv = 0;
-      for (let i = 0; i < 15; i++) {
-        for (let j = i + 1; j < 16; j++) {
-          if (arr[i] && arr[j] && arr[i] > arr[j]) inv++;
+      let len = arr.length;
+      let emptyRow = 0;
+      for (let i = 0; i < len; i++) {
+        if (arr[i] === 0) {
+          emptyRow = Math.floor(i / n);
+          continue;
+        }
+        for (let j = i + 1; j < len; j++) {
+          if (arr[j] !== 0 && arr[i] > arr[j]) inv++;
         }
       }
-      const emptyRowFromBottom = 4 - Math.floor(arr.indexOf(0) / 4);
-      return (emptyRowFromBottom % 2 === 0) ? (inv % 2 === 1) : (inv % 2 === 0);
+      if (n % 2 !== 0) {
+        return inv % 2 === 0;
+      } else {
+        if ((n - emptyRow) % 2 !== 0) {
+          return inv % 2 === 0;
+        } else {
+          return inv % 2 !== 0;
+        }
+      }
     }
 
     function isSolved(arr) {
-      for (let i = 0; i < 15; i++) {
+      let total = size * size;
+      for (let i = 0; i < total - 1; i++) {
         if (arr[i] !== i + 1) return false;
       }
-      return arr[15] === 0;
+      return arr[total - 1] === 0;
     }
 
     function newGame() {
@@ -180,19 +234,27 @@
       winBanner.textContent = '';
       gameActive = true;
 
+      boardEl.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+      boardEl.style.gridTemplateRows = `repeat(${size}, 1fr)`;
+
+      let total = size * size;
       do {
-        tiles = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,0];
+        tiles = [];
+        for (let i = 1; i < total; i++) tiles.push(i);
+        tiles.push(0);
+
         for (let i = tiles.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1));
           [tiles[i], tiles[j]] = [tiles[j], tiles[i]];
         }
-      } while (!isSolvable(tiles) || isSolved(tiles));
+      } while (!isSolvable(tiles, size) || isSolved(tiles));
 
       render();
     }
 
     function render() {
       boardEl.innerHTML = '';
+      let fontSize = size === 3 ? '1.8rem' : size === 4 ? '1.4rem' : '1.1rem';
       tiles.forEach((num, idx) => {
         const div = document.createElement('div');
         if (num === 0) {
@@ -200,6 +262,7 @@
         } else {
           div.className = 'tile' + (num === idx + 1 ? ' correct' : '');
           div.textContent = num;
+          div.style.fontSize = fontSize;
           div.onclick = () => moveTile(idx);
         }
         boardEl.appendChild(div);
@@ -209,8 +272,8 @@
     function moveTile(idx) {
       if (!gameActive) return;
       const emptyIdx = tiles.indexOf(0);
-      const r1 = Math.floor(idx / 4), c1 = idx % 4;
-      const r2 = Math.floor(emptyIdx / 4), c2 = emptyIdx % 4;
+      const r1 = Math.floor(idx / size), c1 = idx % size;
+      const r2 = Math.floor(emptyIdx / size), c2 = emptyIdx % size;
 
       if (Math.abs(r1 - r2) + Math.abs(c1 - c2) === 1) {
         if (moves === 0) startTimer();
@@ -222,7 +285,7 @@
         if (isSolved(tiles)) {
           gameActive = false;
           stopTimer();
-          winBanner.textContent = `🎉 Mubarak! Solved in ${moves} moves (${formatTime(seconds)})`;
+          winBanner.textContent = `🎉 زبردست! آپ نے جیت لیا (${moves} چالیں)`;
         }
       }
     }
@@ -235,3 +298,4 @@
   </script>
 </body>
 </html>
+
