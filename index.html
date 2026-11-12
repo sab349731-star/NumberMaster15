@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#0f172a" />
   <meta name="mobile-web-app-capable" content="yes" />
-  <title>NumberMaster Multi-Level</title>
+  <title>Number Master 15</title>
   <link rel="manifest" href="manifest.json" />
   <style>
     :root {
@@ -29,7 +29,13 @@
       padding: 16px;
     }
     header { text-align: center; margin-bottom: 14px; }
-    h1 { font-size: 1.6rem; font-weight: 800; letter-spacing: 0.5px; }
+    h1 { font-size: 1.5rem; font-weight: 800; letter-spacing: 0.5px; }
+    .creator-name {ABDULBASIT 
+      font-size: 0.9rem;
+      color: #38bdf8;
+      margin-top: 4px;
+      font-weight: 600;
+    }
     .levels {
       display: flex;
       gap: 8px;
@@ -82,7 +88,7 @@
       gap: 6px;
     }
     .tile {
-      background: var(--tile);
+      background: var(NUMBER MASTER15);
       border-radius: 8px;
       display: flex;
       align-items: center;
@@ -124,7 +130,9 @@
 </head>
 <body>
   <header>
-    <h1>NumberMaster</h1>
+    <h1>Number Master 15</h1>
+    <div class="creator-name">Created by Abdul Basit</div>
+
     <div class="levels">
       <button class="level-btn active" onclick="setGridSize(3, this)">Easy (3x3)</button>
       <button class="level-btn" onclick="setGridSize(4, this)">Medium (4x4)</button>
@@ -153,6 +161,51 @@
   </div>
 
   <script>
+    // Audio Context for sound effects without needing external files
+    let audioCtx = null;
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+    }
+
+    function playSound(type) {
+      try {
+        initAudio();
+        if (!audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        if (type === 'move') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.05);
+          gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.05);
+        } else if (type === 'win') {
+          let now = audioCtx.currentTime;
+          [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+            let o = audioCtx.createOscillator();
+            let g = audioCtx.createGain();
+            o.connect(g);
+            g.connect(audioCtx.destination);
+            o.type = 'triangle';
+            o.frequency.setValueAtTime(freq, now + i * 0.1);
+            g.gain.setValueAtTime(0.2, now + i * 0.1);
+            g.gain.exponentialRampToValueAtTime(0.01, now + i * 0.1 + 0.2);
+            o.start(now + i * 0.1);
+            o.stop(now + i * 0.1 + 0.2);
+          });
+        }
+      } catch (e) {
+        // Ignore audio errors if blocked by browser policy
+      }
+    }
+
     const boardEl = document.getElementById('board');
     const movesEl = document.getElementById('moves');
     const timerEl = document.getElementById('timer');
@@ -166,6 +219,7 @@
     let gameActive = false;
 
     function setGridSize(s, btn) {
+      playSound('move');
       document.querySelectorAll('.level-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       size = s;
@@ -226,6 +280,7 @@
     }
 
     function newGame() {
+      playSound('move');
       stopTimer();
       seconds = 0;
       moves = 0;
@@ -280,11 +335,13 @@
         [tiles[idx], tiles[emptyIdx]] = [tiles[emptyIdx], tiles[idx]];
         moves++;
         movesEl.textContent = moves;
+        playSound('move');
         render();
 
         if (isSolved(tiles)) {
           gameActive = false;
           stopTimer();
+          playSound('win');
           winBanner.textContent = `🎉 زبردست! آپ نے جیت لیا (${moves} چالیں)`;
         }
       }
@@ -298,4 +355,3 @@
   </script>
 </body>
 </html>
-
