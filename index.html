@@ -1,325 +1,445 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Number Master 15</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            user-select: none;
-        }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1e1e2f, #2a2a40);
-            color: #ffffff;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-        }
-        .container {
-            text-align: center;
-            width: 100%;
-            max-width: 400px;
-            padding: 20px;
-        }
-        h1 {
-            margin-bottom: 5px;
-            color: #4facfe;
-        }
-        .subtitle {
-            font-size: 14px;
-            color: #b0b0b0;
-            margin-bottom: 20px;
-        }
-        .btn {
-            background: linear-gradient(135deg, #4facfe, #00f2fe);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            font-size: 16px;
-            font-weight: bold;
-            border-radius: 25px;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0, 242, 254, 0.4);
-            transition: 0.2s;
-            margin: 5px;
-        }
-        .btn:active {
-            transform: scale(0.95);
-        }
-        .btn-secondary {
-            background: #444;
-            box-shadow: none;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <title>Number Master </title>
+  <link rel="manifest" href="manifest.json" />
+  <style>
+    :root {
+      --bg: #0f172a;
+      --board: #1e293b;
+      --tile: #3b82f6;
+      --tile-correct: #10b981;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; user-select: none; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
 
-        /* WELCOME / LOADING SCREEN */
-        #welcome-screen {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-        .welcome-title {
-            font-size: 28px;
-            font-weight: bold;
-            color: #4facfe;
-            margin-bottom: 10px;
-            text-shadow: 0 0 10px rgba(79, 172, 254, 0.5);
-        }
-        .loading-bar-container {
-            width: 80%;
-            background: #33334d;
-            border-radius: 15px;
-            height: 15px;
-            margin: 20px 0;
-            overflow: hidden;
-            border: 1px solid #4facfe;
-        }
-        .loading-bar {
-            width: 0%;
-            height: 100%;
-            background: linear-gradient(90deg, #4facfe, #00f2fe);
-            transition: width 0.1s linear;
-        }
-        .loading-text {
-            font-size: 16px;
-            color: #b0b0b0;
-            font-weight: bold;
-        }
-        
-        /* Level Selection Screen */
-        #level-screen {
-            display: none;
-            flex-direction: column;
-            align-items: center;
-        }
-        .levels-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-            width: 100%;
-            margin-bottom: 20px;
-            max-height: 300px;
-            overflow-y: auto;
-            padding: 10px;
-        }
-        .level-card {
-            background: #33334d;
-            border-radius: 12px;
-            padding: 20px 0;
-            font-size: 20px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.2s;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            border: 2px solid transparent;
-        }
-        .level-card.unlocked {
-            background: #3b3b5c;
-            border-color: #4facfe;
-            color: #fff;
-        }
-        .level-card.locked {
-            background: #222233;
-            color: #666;
-            cursor: not-allowed;
-            border-color: #333;
-        }
-        .level-card span.lock-icon {
-            font-size: 12px;
-            margin-top: 5px;
-            color: #ff6b6b;
-        }
+    /* WELCOME & LOADING SCREEN STYLES */
+    #welcome-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+      text-align: center;
+    }
+    .welcome-title {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: #38bdf8;
+      margin-bottom: 20px;
+      text-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
+    }
+    .loading-bar-container {
+      width: 80%;
+      max-width: 280px;
+      background: var(--board);
+      border-radius: 12px;
+      height: 14px;
+      margin: 15px 0;
+      overflow: hidden;
+      border: 1px solid #38bdf8;
+    }
+    .loading-bar {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, #3b82f6, #10b981);
+      transition: width 0.05s linear;
+    }
+    .loading-text {
+      font-size: 0.95rem;
+      color: var(--muted);
+      font-weight: 600;
+      margin-top: 5px;
+    }
 
-        /* Game Play Screen */
-        #game-screen {
-            display: none;
-            flex-direction: column;
-            align-items: center;
-        }
-        .game-info {
-            display: flex;
-            justify-content: space-between;
-            width: 100%;
-            margin-bottom: 20px;
-            font-size: 16px;
-            background: rgba(255, 255, 255, 0.05);
-            padding: 10px 15px;
-            border-radius: 10px;
-        }
-        .target-box {
-            font-size: 24px;
-            margin-bottom: 20px;
-            background: #2a2a40;
-            padding: 15px 30px;
-            border-radius: 15px;
-            border: 2px dashed #4facfe;
-        }
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            width: 100%;
-            margin-bottom: 20px;
-        }
-        .tile {
-            background: #3a3a5e;
-            height: 75px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.1s;
-        }
-        .tile:active {
-            transform: scale(0.92);
-            background: #4facfe;
-        }
-    </style>
+    header { text-align: center; margin-bottom: 14px; }
+    h1 { font-size: 1.5rem; font-weight: 800; letter-spacing: 0.5px; }
+    .creator-name {
+      font-size: 0.85rem;
+      color: #38bdf8;
+      margin-top: 2px;
+      font-weight: 600;
+    }
+    .level-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #fff;
+      padding: 5px 18px;
+      border-radius: 20px;
+      font-size: 1rem;
+      font-weight: 800;
+      margin-top: 10px;
+      box-shadow: 0 4px 10px rgba(245, 158, 11, 0.3);
+    }
+    .stats {
+      display: flex;
+      gap: 12px;
+      margin-top: 10px;
+      justify-content: center;
+    }
+    .stat-box {
+      background: var(--board);
+      padding: 6px 14px;
+      border-radius: 10px;
+      min-width: 80px;
+    }
+    .stat-label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; }
+    .stat-val { font-size: 1.1rem; font-weight: 700; margin-top: 2px; }
+    .board-container {
+      width: min(85vw, 340px);
+      height: min(85vw, 340px);
+      background: var(--board);
+      padding: 8px;
+      border-radius: 16px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .board {
+      width: 100%;
+      height: 100%;
+      display: grid;
+      gap: 6px;
+    }
+    .tile {
+      background: var(--tile);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 0.1s ease, background 0.2s ease;
+      box-shadow: 0 3px 0 rgba(0,0,0,0.2);
+    }
+    .tile:active { transform: scale(0.95); }
+    .tile.correct { background: var(--tile-correct); }
+    .tile.empty { background: transparent; box-shadow: none; cursor: default; }
+    .controls {
+      margin-top: 16px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    button.action-btn {
+      background: #6366f1;
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(99,102,241,0.4);
+    }
+    button.next-btn {
+      background: #10b981;
+      box-shadow: 0 4px 12px rgba(16,185,129,0.4);
+      display: none;
+    }
+    button.reset-btn {
+      background: #475569;
+      box-shadow: none;
+      font-size: 0.85rem;
+      padding: 10px 14px;
+    }
+    button:active { transform: scale(0.97); }
+    .win-banner {
+      margin-top: 12px;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #34d399;
+      min-height: 24px;
+      text-align: center;
+    }
+  </style>
 </head>
 <body>
 
-    <div class="container">
-        <!-- WELCOME & LOADING SCREEN -->
-        <div id="welcome-screen">
-            <div class="welcome-title">Welcome to<br>Number Master 15</div>
-            <div class="loading-bar-container">
-                <div class="loading-bar" id="loadingBar"></div>
-            </div>
-            <div class="loading-text" id="loadingText">Loading 0%</div>
-        </div>
-
-        <!-- LEVEL SELECTION SCREEN -->
-        <div id="level-screen">
-            <h1>Number Master 15</h1>
-            <div class="subtitle">Select Your Level</div>
-            <div class="levels-grid" id="levelsGrid"></div>
-        </div>
-
-        <!-- GAME SCREEN -->
-        <div id="game-screen">
-            <div class="game-info">
-                <span id="levelTitle">Level 1</span>
-                <span id="scoreDisplay">Score: 0</span>
-            </div>
-            <div class="target-box" id="targetDisplay">Target: 15</div>
-            <div class="grid" id="numberGrid"></div>
-            <button class="btn btn-secondary" onclick="backToLevels()">⬅ Levels</button>
-        </div>
+  <!-- WELCOME & LOADING SCREEN -->
+  <div id="welcome-screen">
+    <div class="welcome-title">Welcome to<br>Number Master 15</div>
+    <div class="loading-bar-container">
+      <div class="loading-bar" id="loadingBar"></div>
     </div>
+    <div class="loading-text" id="loadingText">Loading 0%</div>
+  </div>
 
-    <script>
-        const totalLevels = 15;
-        let currentLevel = 1;
-        let currentScore = 0;
-        let targetNumber = 15;
+  <header>
+    <h1>Number Master 15</h1>
+    <div class="creator-name">Created by Abdul Basit</div>
+    <div class="level-badge" id="levelDisplay">Level 1</div>
 
-        // Loading animation from 0 to 100%
-        let loadProgress = 0;
-        const loadingInterval = setInterval(() => {
-            loadProgress += 2; // speed of loading
-            if (loadProgress <= 100) {
-                document.getElementById('loadingBar').style.width = loadProgress + '%';
-                document.getElementById('loadingText').innerText = `Loading ${loadProgress}%`;
-            } else {
-                clearInterval(loadingInterval);
-                // Switch from welcome screen to level selection screen
-                document.getElementById('welcome-screen').style.display = 'none';
-                document.getElementById('level-screen').style.display = 'flex';
-                renderLevels();
-            }
-        }, 30); // smooth speed
+    <div class="stats">
+      <div class="stat-box">
+        <div class="stat-label">Moves</div>
+        <div class="stat-val" id="moves">0</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Time</div>
+        <div class="stat-val" id="timer">00:00</div>
+      </div>
+    </div>
+  </header>
 
-        // Load progress from localStorage
-        function getUnlockedLevel() {
-            return parseInt(localStorage.getItem('nm15_unlocked') || '1');
+  <div class="board-container">
+    <div class="board" id="board"></div>
+  </div>
+
+  <div class="win-banner" id="winBanner"></div>
+
+  <div class="controls">
+    <button class="action-btn" onclick="startLevel(currentLevel)">Restart</button>
+    <button class="action-btn next-btn" id="nextBtn" onclick="nextLevel()">Next Level ➡️</button>
+    <button class="action-btn reset-btn" onclick="resetProgress()">Reset All</button>
+  </div>
+
+  <script>
+    // Smooth Loading Animation from 0 to 100%
+    let loadProgress = 0;
+    const loadingInterval = setInterval(() => {
+      loadProgress += 2;
+      if (loadProgress <= 100) {
+        document.getElementById('loadingBar').style.width = loadProgress + '%';
+        document.getElementById('loadingText').textContent = `Loading ${loadProgress}%`;
+      } else {
+        clearInterval(loadingInterval);
+        // Hide welcome screen smoothly
+        const welcomeScreen = document.getElementById('welcome-screen');
+        welcomeScreen.style.opacity = '0';
+        welcomeScreen.style.transition = 'opacity 0.4s ease';
+        setTimeout(() => {
+          welcomeScreen.style.display = 'none';
+        }, 400);
+      }
+    }, 25);
+
+    let audioCtx = null;
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+    }
+
+    function playSound(type) {
+      try {
+        initAudio();
+        if (!audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        if (type === 'move') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(420, audioCtx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(220, audioCtx.currentTime + 0.05);
+          gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.05);
+        } else if (type === 'win') {
+          let now = audioCtx.currentTime;
+          [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+            let o = audioCtx.createOscillator();
+            let g = audioCtx.createGain();
+            o.connect(g);
+            g.connect(audioCtx.destination);
+            o.type = 'triangle';
+            o.frequency.setValueAtTime(freq, now + i * 0.1);
+            g.gain.setValueAtTime(0.2, now + i * 0.1);
+            g.gain.exponentialRampToValueAtTime(0.01, now + i * 0.1 + 0.2);
+            o.start(now + i * 0.1);
+            o.stop(now + i * 0.1 + 0.2);
+          });
         }
+      } catch (e) {}
+    }
 
-        function setUnlockedLevel(lvl) {
-            let currentUnlocked = getUnlockedLevel();
-            if (lvl > currentUnlocked) {
-                localStorage.setItem('nm15_unlocked', lvl);
-            }
+    const boardEl = document.getElementById('board');
+    const movesEl = document.getElementById('moves');
+    const timerEl = document.getElementById('timer');
+    const winBanner = document.getElementById('winBanner');
+    const levelDisplay = document.getElementById('levelDisplay');
+    const nextBtn = document.getElementById('nextBtn');
+
+    let currentLevel = parseInt(localStorage.getItem('nm_level')) || 1;
+    let size = 3;
+    let tiles = [];
+    let moves = 0;
+    let seconds = 0;
+    let timerInterval = null;
+    let gameActive = false;
+
+    function getLevelConfig(lvl) {
+      if (lvl === 1) return { grid: 3, shuffleMoves: 6 };
+      if (lvl === 2) return { grid: 3, shuffleMoves: 15 };
+      if (lvl === 3) return { grid: 3, shuffleMoves: 35 };
+      if (lvl === 4) return { grid: 4, shuffleMoves: 20 };
+      if (lvl === 5) return { grid: 4, shuffleMoves: 45 };
+      if (lvl === 6) return { grid: 4, shuffleMoves: 80 };
+      return { grid: 5, shuffleMoves: 60 + (lvl * 10) };
+    }
+
+    function formatTime(s) {
+      const m = String(Math.floor(s / 60)).padStart(2, '0');
+      const sec = String(s % 60).padStart(2, '0');
+      return `${m}:${sec}`;
+    }
+
+    function startTimer() {
+      if (timerInterval) return;
+      timerInterval = setInterval(() => {
+        seconds++;
+        timerEl.textContent = formatTime(seconds);
+      }, 1000);
+    }
+
+    function stopTimer() {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+
+    function isSolved(arr) {
+      let total = size * size;
+      for (let i = 0; i < total - 1; i++) {
+        if (arr[i] !== i + 1) return false;
+      }
+      return arr[total - 1] === 0;
+    }
+
+    function startLevel(lvl) {
+      stopTimer();
+      seconds = 0;
+      moves = 0;
+      movesEl.textContent = '0';
+      timerEl.textContent = '00:00';
+      winBanner.textContent = '';
+      nextBtn.style.display = 'none';
+      gameActive = true;
+
+      const config = getLevelConfig(lvl);
+      size = config.grid;
+      levelDisplay.textContent = `Level ${lvl} (${size}x${size})`;
+
+      boardEl.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+      boardEl.style.gridTemplateRows = `repeat(${size}, 1fr)`;
+
+      let total = size * size;
+      tiles = [];
+      for (let i = 1; i < total; i++) tiles.push(i);
+      tiles.push(0);
+
+      let lastEmpty = -1;
+      for (let step = 0; step < config.shuffleMoves; step++) {
+        const emptyIdx = tiles.indexOf(0);
+        const r = Math.floor(emptyIdx / size);
+        const c = emptyIdx % size;
+        const neighbors = [];
+        if (r > 0) neighbors.push(emptyIdx - size);
+        if (r < size - 1) neighbors.push(emptyIdx + size);
+        if (c > 0) neighbors.push(emptyIdx - 1);
+        if (c < size - 1) neighbors.push(emptyIdx + 1);
+
+        const validNeighbors = neighbors.filter(n => n !== lastEmpty);
+        const pick = validNeighbors[Math.floor(Math.random() * validNeighbors.length)];
+        lastEmpty = emptyIdx;
+        [tiles[emptyIdx], tiles[pick]] = [tiles[pick], tiles[emptyIdx]];
+      }
+
+      if (isSolved(tiles)) {
+        [tiles[total - 1], tiles[total - 2]] = [tiles[total - 2], tiles[total - 1]];
+      }
+
+      render();
+    }
+
+    function render() {
+      boardEl.innerHTML = '';
+      let fontSize = size === 3 ? '1.8rem' : size === 4 ? '1.4rem' : '1.1rem';
+      tiles.forEach((num, idx) => {
+        const div = document.createElement('div');
+        if (num === 0) {
+          div.className = 'tile empty';
+        } else {
+          div.className = 'tile' + (num === idx + 1 ? ' correct' : '');
+          div.textContent = num;
+          div.style.fontSize = fontSize;
+          div.onclick = () => moveTile(idx);
         }
+        boardEl.appendChild(div);
+      });
+    }
 
-        // Render Level Selection Menu
-        function renderLevels() {
-            const grid = document.getElementById('levelsGrid');
-            grid.innerHTML = '';
-            let unlockedMax = getUnlockedLevel();
+    function moveTile(idx) {
+      if (!gameActive) return;
+      const emptyIdx = tiles.indexOf(0);
+      const r1 = Math.floor(idx / size), c1 = idx % size;
+      const r2 = Math.floor(emptyIdx / size), c2 = emptyIdx % size;
 
-            for (let i = 1; i <= totalLevels; i++) {
-                const card = document.createElement('div');
-                card.classList.add('level-card');
+      if (Math.abs(r1 - r2) + Math.abs(c1 - c2) === 1) {
+        if (moves === 0) startTimer();
+        [tiles[idx], tiles[emptyIdx]] = [tiles[emptyIdx], tiles[idx]];
+        moves++;
+        movesEl.textContent = moves;
+        playSound('move');
+        render();
 
-                if (i <= unlockedMax) {
-                    card.classList.add('unlocked');
-                    card.innerHTML = `<div>${i}</div>`;
-                    card.onclick = () => startLevel(i);
-                } else {
-                    card.classList.add('locked');
-                    card.innerHTML = `<div>${i}</div><span class="lock-icon">🔒 Locked</span>`;
-                }
-                grid.appendChild(card);
-            }
+        if (isSolved(tiles)) {
+          gameActive = false;
+          stopTimer();
+          playSound('win');
+          winBanner.textContent = `🎉 زبردست! Level ${currentLevel} مکمل ہو گیا!`;
+          nextBtn.style.display = 'inline-block';
         }
+      }
+    }
 
-        function startLevel(lvl) {
-            currentLevel = lvl;
-            currentScore = 0;
-            targetNumber = 15 + (lvl - 1) * 5;
+    function nextLevel() {
+      playSound('move');
+      currentLevel++;
+      localStorage.setItem('nm_level', currentLevel);
+      startLevel(currentLevel);
+    }
 
-            document.getElementById('level-screen').style.display = 'none';
-            document.getElementById('game-screen').style.display = 'flex';
-            document.getElementById('levelTitle').innerText = `Level ${lvl}`;
-            document.getElementById('targetDisplay').innerText = `Target: ${targetNumber}`;
+    function resetProgress() {
+      if (confirm('کیا آپ دوبارہ Level 1 سے شروع کرنا چاہتے ہیں؟')) {
+        currentLevel = 1;
+        localStorage.setItem('nm_level', 1);
+        startLevel(1);
+      }
+    }
 
-            generateGrid();
-        }
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
 
-        function backToLevels() {
-            document.getElementById('game-screen').style.display = 'none';
-            document.getElementById('level-screen').style.display = 'flex';
-            renderLevels();
-        }
-
-        function generateGrid() {
-            const grid = document.getElementById('numberGrid');
-            grid.innerHTML = '';
-            document.getElementById('scoreDisplay').innerText = `Score: ${currentScore}`;
-
-            for (let i = 0; i < 9; i++) {
-                const tile = document.createElement('div');
-                let randomVal = Math.floor(Math.random() * 5) + 1;
-                tile.classList.add('tile');
-                tile.innerText = randomVal;
-                tile.onclick = () => {
-                    currentScore += randomVal;
-                    document.getElementById('scoreDisplay').innerText = `Score: ${currentScore}`;
-                    
-                    if (currentScore === targetNumber) {
-                        alert(`🎉 Level ${currentLevel} Completed!`);
-                        setUnlockedLevel(currentLevel + 1);
-                        backToLevels();
-                    } else if (currentScore > targetNumber) {
-                        alert(`❌ Oops! Score exceeded target. Try again!`);
-                        startLevel(currentLevel);
-                    }
-                };
-                grid.appendChild(tile);
-            }
-        }
-    </script>
+    startLevel(currentLevel);
+  </script>
 </body>
 </html>
