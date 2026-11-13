@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#0f172a" />
   <meta name="mobile-web-app-capable" content="yes" />
-  <title>Number Master </title>
+  <title>Number Master 15</title>
   <link rel="manifest" href="manifest.json" />
   <style>
     :root {
@@ -27,7 +27,72 @@
       align-items: center;
       justify-content: center;
       padding: 16px;
+      position: relative;
+      overflow-x: hidden;
     }
+
+    /* CONFETTI CANVAS */
+    #confetti-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1500;
+    }
+
+    /* THREE DOTS MENU BUTTON */
+    .top-menu-btn {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      background: var(--board);
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,0.1);
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      font-size: 1.4rem;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 900;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+    .top-menu-btn:active { transform: scale(0.92); }
+
+    /* DROPDOWN MENU */
+    .dropdown-menu {
+      position: fixed;
+      top: 64px;
+      right: 16px;
+      background: var(--board);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 14px;
+      width: 200px;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+      z-index: 950;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    }
+    .menu-item {
+      padding: 13px 16px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-align: left;
+    }
+    .menu-item:last-child { border-bottom: none; }
+    .menu-item:active { background: rgba(59, 130, 246, 0.2); }
 
     /* WELCOME & LOADING SCREEN */
     #welcome-screen {
@@ -75,8 +140,8 @@
       margin-top: 5px;
     }
 
-    /* LEVEL SELECTION MODAL / OVERLAY */
-    #level-modal {
+    /* MODALS (LEVELS & BEST RECORDS) */
+    .modal-overlay {
       position: fixed;
       top: 0;
       left: 0;
@@ -142,6 +207,19 @@
       margin-top: 2px;
       color: #fca5a5;
     }
+    .records-list {
+      max-height: 250px;
+      overflow-y: auto;
+      text-align: left;
+      margin-bottom: 15px;
+      font-size: 0.85rem;
+    }
+    .record-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
 
     header { text-align: center; margin-bottom: 14px; }
     h1 { font-size: 1.5rem; font-weight: 800; letter-spacing: 0.5px; }
@@ -204,12 +282,16 @@
       justify-content: center;
       font-weight: 800;
       cursor: pointer;
-      transition: transform 0.1s ease, background 0.2s ease;
+      transition: transform 0.1s ease, background 0.2s ease, box-shadow 0.2s ease;
       box-shadow: 0 3px 0 rgba(0,0,0,0.2);
     }
     .tile:active { transform: scale(0.95); }
     .tile.correct { background: var(--tile-correct); }
     .tile.empty { background: transparent; box-shadow: none; cursor: default; }
+    .tile.hint-highlight {
+      box-shadow: 0 0 15px 4px #facc15;
+      border: 2px solid #fef08a;
+    }
     .controls {
       margin-top: 16px;
       display: flex;
@@ -258,6 +340,20 @@
 </head>
 <body>
 
+  <!-- CONFETTI CANVAS -->
+  <canvas id="confetti-canvas"></canvas>
+
+  <!-- THREE DOTS MENU BUTTON -->
+  <button class="top-menu-btn" onclick="toggleDropdown()">⋮</button>
+
+  <!-- DROPDOWN MENU -->
+  <div class="dropdown-menu" id="dropdownMenu">
+    <div class="menu-item" onclick="undoMove()">↩️ Undo Move</div>
+    <div class="menu-item" onclick="showHint()">💡 Hint</div>
+    <div class="menu-item" onclick="openRecordsModal()">🏆 Best Score</div>
+    <div class="menu-item" onclick="toggleSound()" id="soundToggleText">🔊 Sound: ON</div>
+  </div>
+
   <!-- WELCOME & LOADING SCREEN -->
   <div id="welcome-screen">
     <div class="welcome-title">Welcome to<br>Number Master 15</div>
@@ -268,11 +364,20 @@
   </div>
 
   <!-- LEVEL SELECTION POPUP MODAL -->
-  <div id="level-modal">
+  <div id="level-modal" class="modal-overlay">
     <div class="modal-content">
       <div class="modal-title">Select Level</div>
       <div class="levels-grid" id="levelsGrid"></div>
-      <button class="action-btn close-modal-btn" onclick="closeLevelModal()">Close</button>
+      <button class="action-btn close-modal-btn" onclick="closeModal('level-modal')">Close</button>
+    </div>
+  </div>
+
+  <!-- BEST RECORDS MODAL -->
+  <div id="records-modal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-title">🏆 Best Records</div>
+      <div class="records-list" id="recordsList"></div>
+      <button class="action-btn close-modal-btn" onclick="closeModal('records-modal')">Close</button>
     </div>
   </div>
 
@@ -324,7 +429,23 @@
       }
     }, 25);
 
+    // Sound System
+    let soundEnabled = localStorage.getItem('nm_sound') !== 'false';
     let audioCtx = null;
+
+    function updateSoundMenuText() {
+      document.getElementById('soundToggleText').textContent = soundEnabled ? '🔊 Sound: ON' : '🔇 Sound: OFF';
+    }
+    updateSoundMenuText();
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      localStorage.setItem('nm_sound', soundEnabled);
+      updateSoundMenuText();
+      if (soundEnabled) playSound('click');
+      closeDropdown();
+    }
+
     function initAudio() {
       if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -332,6 +453,7 @@
     }
 
     function playSound(type) {
+      if (!soundEnabled) return;
       try {
         initAudio();
         if (!audioCtx) return;
@@ -348,6 +470,13 @@
           gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
           osc.start();
           osc.stop(audioCtx.currentTime + 0.05);
+        } else if (type === 'click') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+          gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.04);
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.04);
         } else if (type === 'win') {
           let now = audioCtx.currentTime;
           [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
@@ -366,6 +495,22 @@
       } catch (e) {}
     }
 
+    // Dropdown Logic
+    const dropdownMenu = document.getElementById('dropdownMenu');
+    function toggleDropdown() {
+      playSound('click');
+      dropdownMenu.style.display = dropdownMenu.style.display === 'flex' ? 'none' : 'flex';
+    }
+    function closeDropdown() {
+      dropdownMenu.style.display = 'none';
+    }
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.top-menu-btn') && !e.target.closest('.dropdown-menu')) {
+        closeDropdown();
+      }
+    });
+
+    // Game Variables
     const boardEl = document.getElementById('board');
     const movesEl = document.getElementById('moves');
     const timerEl = document.getElementById('timer');
@@ -379,6 +524,8 @@
     let unlockedLevel = parseInt(localStorage.getItem('nm_unlocked')) || currentLevel;
     let size = 3;
     let tiles = [];
+    let moveHistory = []; // For Undo feature
+    let hintTileIndex = -1; // For Hint highlight
     let moves = 0;
     let seconds = 0;
     let timerInterval = null;
@@ -424,8 +571,11 @@
 
     function startLevel(lvl) {
       stopTimer();
+      stopConfetti();
       seconds = 0;
       moves = 0;
+      moveHistory = [];
+      hintTileIndex = -1;
       movesEl.textContent = '0';
       timerEl.textContent = '00:00';
       winBanner.textContent = '';
@@ -479,7 +629,7 @@
         if (num === 0) {
           div.className = 'tile empty';
         } else {
-          div.className = 'tile' + (num === idx + 1 ? ' correct' : '');
+          div.className = 'tile' + (num === idx + 1 ? ' correct' : '') + (idx === hintTileIndex ? ' hint-highlight' : '');
           div.textContent = num;
           div.style.fontSize = fontSize;
           div.onclick = () => moveTile(idx);
@@ -496,6 +646,11 @@
 
       if (Math.abs(r1 - r2) + Math.abs(c1 - c2) === 1) {
         if (moves === 0) startTimer();
+        
+        // Save state for Undo
+        moveHistory.push([...tiles]);
+        hintTileIndex = -1;
+
         [tiles[idx], tiles[emptyIdx]] = [tiles[emptyIdx], tiles[idx]];
         moves++;
         movesEl.textContent = moves;
@@ -506,6 +661,8 @@
           gameActive = false;
           stopTimer();
           playSound('win');
+          startConfetti();
+          saveBestRecord(currentLevel, moves, seconds);
           winBanner.textContent = `🎉 زبردست! Level ${currentLevel} مکمل ہو گیا!`;
           nextBtn.style.display = 'inline-block';
 
@@ -515,6 +672,83 @@
           }
         }
       }
+    }
+
+    // Undo Feature
+    function undoMove() {
+      closeDropdown();
+      if (!gameActive || moveHistory.length === 0) {
+        playSound('click');
+        return;
+      }
+      tiles = moveHistory.pop();
+      moves = Math.max(0, moves - 1);
+      movesEl.textContent = moves;
+      hintTileIndex = -1;
+      playSound('move');
+      render();
+    }
+
+    // Hint Feature (Finds a valid move that improves Manhattan distance)
+    function showHint() {
+      closeDropdown();
+      if (!gameActive) return;
+      playSound('click');
+      const emptyIdx = tiles.indexOf(0);
+      const r = Math.floor(emptyIdx / size);
+      const c = emptyIdx % size;
+      const neighbors = [];
+      if (r > 0) neighbors.push(emptyIdx - size);
+      if (r < size - 1) neighbors.push(emptyIdx + size);
+      if (c > 0) neighbors.push(emptyIdx - 1);
+      if (c < size - 1) neighbors.push(emptyIdx + 1);
+
+      let bestNeighbor = neighbors[0];
+      let bestImprovement = -999;
+
+      neighbors.forEach(nIdx => {
+        let val = tiles[nIdx];
+        let targetIdx = val - 1;
+        let currDist = Math.abs(Math.floor(nIdx / size) - Math.floor(targetIdx / size)) + Math.abs((nIdx % size) - (targetIdx % size));
+        let newDist = Math.abs(Math.floor(emptyIdx / size) - Math.floor(targetIdx / size)) + Math.abs((emptyIdx % size) - (targetIdx % size));
+        let improvement = currDist - newDist;
+        if (improvement > bestImprovement) {
+          bestImprovement = improvement;
+          bestNeighbor = nIdx;
+        }
+      });
+
+      hintTileIndex = bestNeighbor;
+      render();
+    }
+
+    // Best Score / Records System
+    function saveBestRecord(lvl, m, s) {
+      let records = JSON.parse(localStorage.getItem('nm_records') || '{}');
+      if (!records[lvl] || m < records[lvl].moves || (m === records[lvl].moves && s < records[lvl].time)) {
+        records[lvl] = { moves: m, time: s };
+        localStorage.setItem('nm_records', JSON.stringify(records));
+      }
+    }
+
+    function openRecordsModal() {
+      closeDropdown();
+      playSound('click');
+      const list = document.getElementById('recordsList');
+      list.innerHTML = '';
+      let records = JSON.parse(localStorage.getItem('nm_records') || '{}');
+
+      for (let i = 1; i <= totalLevels; i++) {
+        const row = document.createElement('div');
+        row.className = 'record-row';
+        if (records[i]) {
+          row.innerHTML = `<span><strong>Level ${i}</strong></span><span>${records[i].moves} Moves | ${formatTime(records[i].time)}</span>`;
+        } else {
+          row.innerHTML = `<span style="color:var(--muted)">Level ${i}</span><span style="color:var(--muted)">--</span>`;
+        }
+        list.appendChild(row);
+      }
+      document.getElementById('records-modal').style.display = 'flex';
     }
 
     function nextLevel() {
@@ -537,7 +771,7 @@
     }
 
     function openLevelModal() {
-      playSound('move');
+      playSound('click');
       levelsGrid.innerHTML = '';
       unlockedLevel = parseInt(localStorage.getItem('nm_unlocked')) || 1;
 
@@ -548,7 +782,7 @@
           card.classList.add('unlocked');
           card.innerHTML = `<div>Level ${i}</div>`;
           card.onclick = () => {
-            closeLevelModal();
+            closeModal('level-modal');
             startLevel(i);
           };
         } else {
@@ -560,8 +794,54 @@
       levelModal.style.display = 'flex';
     }
 
-    function closeLevelModal() {
-      levelModal.style.display = 'none';
+    function closeModal(id) {
+      playSound('click');
+      document.getElementById(id).style.display = 'none';
+    }
+
+    // Confetti Celebration Engine
+    const canvas = document.getElementById('confetti-canvas');
+    const ctx = canvas.getContext('2d');
+    let confettiParticles = [];
+    let confettiAnim = null;
+
+    function startConfetti() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      confettiParticles = [];
+      const colors = ['#38bdf8', '#10b981', '#f59e0b', '#ec4899', '#a855f7'];
+      for (let i = 0; i < 80; i++) {
+        confettiParticles.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height - canvas.height,
+          r: Math.random() * 6 + 4,
+          d: Math.random() * 10 + 5,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          tilt: Math.random() * 10 - 10
+        });
+      }
+      animateConfetti();
+    }
+
+    function animateConfetti() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      confettiParticles.forEach(p => {
+        ctx.beginPath();
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.x, p.y, p.r, p.r * 1.5);
+        p.y += Math.cos(p.d) + 3;
+        p.x += Math.sin(p.d) * 1.5;
+        if (p.y > canvas.height) {
+          p.y = -10;
+          p.x = Math.random() * canvas.width;
+        }
+      });
+      confettiAnim = requestAnimationFrame(animateConfetti);
+    }
+
+    function stopConfetti() {
+      if (confettiAnim) cancelAnimationFrame(confettiAnim);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
 
     if ('serviceWorker' in navigator) {
