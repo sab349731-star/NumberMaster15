@@ -1,0 +1,10 @@
+{
+  "name": "Number Master 15",
+  "short_name": "NumberMaster",
+  "description": "An exciting multi-level puzzle game created by Abdul Basit.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": []
+}
