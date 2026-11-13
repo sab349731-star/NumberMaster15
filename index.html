@@ -29,7 +29,7 @@
       padding: 16px;
     }
 
-    /* WELCOME & LOADING SCREEN STYLES */
+    /* WELCOME & LOADING SCREEN */
     #welcome-screen {
       position: fixed;
       top: 0;
@@ -41,7 +41,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      z-index: 1000;
+      z-index: 2000;
       padding: 20px;
       text-align: center;
     }
@@ -75,6 +75,74 @@
       margin-top: 5px;
     }
 
+    /* LEVEL SELECTION MODAL / OVERLAY */
+    #level-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(15, 23, 42, 0.95);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+    .modal-content {
+      background: var(--board);
+      width: 100%;
+      max-width: 360px;
+      border-radius: 20px;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .modal-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 15px;
+      color: #38bdf8;
+    }
+    .levels-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      max-height: 250px;
+      overflow-y: auto;
+      margin-bottom: 15px;
+      padding: 5px;
+    }
+    .level-card {
+      background: #2a3b5c;
+      border-radius: 10px;
+      padding: 12px 0;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+    .level-card.unlocked {
+      background: #3b82f6;
+      color: white;
+    }
+    .level-card.locked {
+      background: #1e293b;
+      color: var(--muted);
+      cursor: not-allowed;
+    }
+    .level-card span.lock-text {
+      font-size: 0.65rem;
+      margin-top: 2px;
+      color: #fca5a5;
+    }
+
     header { text-align: center; margin-bottom: 14px; }
     h1 { font-size: 1.5rem; font-weight: 800; letter-spacing: 0.5px; }
     .creator-name {
@@ -87,13 +155,16 @@
       display: inline-block;
       background: linear-gradient(135deg, #f59e0b, #d97706);
       color: #fff;
-      padding: 5px 18px;
+      padding: 6px 20px;
       border-radius: 20px;
       font-size: 1rem;
       font-weight: 800;
       margin-top: 10px;
       box-shadow: 0 4px 10px rgba(245, 158, 11, 0.3);
+      cursor: pointer;
+      transition: transform 0.1s ease;
     }
+    .level-badge:active { transform: scale(0.95); }
     .stats {
       display: flex;
       gap: 12px;
@@ -168,6 +239,12 @@
       font-size: 0.85rem;
       padding: 10px 14px;
     }
+    button.close-modal-btn {
+      background: #ef4444;
+      margin-top: 10px;
+      width: 100%;
+      box-shadow: 0 4px 12px rgba(239,68,68,0.3);
+    }
     button:active { transform: scale(0.97); }
     .win-banner {
       margin-top: 12px;
@@ -190,10 +267,19 @@
     <div class="loading-text" id="loadingText">Loading 0%</div>
   </div>
 
+  <!-- LEVEL SELECTION POPUP MODAL -->
+  <div id="level-modal">
+    <div class="modal-content">
+      <div class="modal-title">Select Level</div>
+      <div class="levels-grid" id="levelsGrid"></div>
+      <button class="action-btn close-modal-btn" onclick="closeLevelModal()">Close</button>
+    </div>
+  </div>
+
   <header>
     <h1>Number Master 15</h1>
     <div class="creator-name">Created by Abdul Basit</div>
-    <div class="level-badge" id="levelDisplay">Level 1</div>
+    <div class="level-badge" id="levelDisplay" onclick="openLevelModal()">Level 1</div>
 
     <div class="stats">
       <div class="stat-box">
@@ -229,7 +315,6 @@
         document.getElementById('loadingText').textContent = `Loading ${loadProgress}%`;
       } else {
         clearInterval(loadingInterval);
-        // Hide welcome screen smoothly
         const welcomeScreen = document.getElementById('welcome-screen');
         welcomeScreen.style.opacity = '0';
         welcomeScreen.style.transition = 'opacity 0.4s ease';
@@ -287,14 +372,18 @@
     const winBanner = document.getElementById('winBanner');
     const levelDisplay = document.getElementById('levelDisplay');
     const nextBtn = document.getElementById('nextBtn');
+    const levelModal = document.getElementById('level-modal');
+    const levelsGrid = document.getElementById('levelsGrid');
 
     let currentLevel = parseInt(localStorage.getItem('nm_level')) || 1;
+    let unlockedLevel = parseInt(localStorage.getItem('nm_unlocked')) || currentLevel;
     let size = 3;
     let tiles = [];
     let moves = 0;
     let seconds = 0;
     let timerInterval = null;
     let gameActive = false;
+    const totalLevels = 15;
 
     function getLevelConfig(lvl) {
       if (lvl === 1) return { grid: 3, shuffleMoves: 6 };
@@ -342,6 +431,9 @@
       winBanner.textContent = '';
       nextBtn.style.display = 'none';
       gameActive = true;
+
+      currentLevel = lvl;
+      localStorage.setItem('nm_level', currentLevel);
 
       const config = getLevelConfig(lvl);
       size = config.grid;
@@ -416,23 +508,60 @@
           playSound('win');
           winBanner.textContent = `🎉 زبردست! Level ${currentLevel} مکمل ہو گیا!`;
           nextBtn.style.display = 'inline-block';
+
+          if (currentLevel >= unlockedLevel && currentLevel < totalLevels) {
+            unlockedLevel = currentLevel + 1;
+            localStorage.setItem('nm_unlocked', unlockedLevel);
+          }
         }
       }
     }
 
     function nextLevel() {
       playSound('move');
-      currentLevel++;
-      localStorage.setItem('nm_level', currentLevel);
-      startLevel(currentLevel);
+      if (currentLevel < totalLevels) {
+        startLevel(currentLevel + 1);
+      } else {
+        alert('🎉 آپ نے تمام لیولز مکمل کر لیے ہیں!');
+      }
     }
 
     function resetProgress() {
       if (confirm('کیا آپ دوبارہ Level 1 سے شروع کرنا چاہتے ہیں؟')) {
         currentLevel = 1;
+        unlockedLevel = 1;
         localStorage.setItem('nm_level', 1);
+        localStorage.setItem('nm_unlocked', 1);
         startLevel(1);
       }
+    }
+
+    function openLevelModal() {
+      playSound('move');
+      levelsGrid.innerHTML = '';
+      unlockedLevel = parseInt(localStorage.getItem('nm_unlocked')) || 1;
+
+      for (let i = 1; i <= totalLevels; i++) {
+        const card = document.createElement('div');
+        card.className = 'level-card';
+        if (i <= unlockedLevel) {
+          card.classList.add('unlocked');
+          card.innerHTML = `<div>Level ${i}</div>`;
+          card.onclick = () => {
+            closeLevelModal();
+            startLevel(i);
+          };
+        } else {
+          card.classList.add('locked');
+          card.innerHTML = `<div>Level ${i}</div><span class="lock-text">🔒 Locked</span>`;
+        }
+        levelsGrid.appendChild(card);
+      }
+      levelModal.style.display = 'flex';
+    }
+
+    function closeLevelModal() {
+      levelModal.style.display = 'none';
     }
 
     if ('serviceWorker' in navigator) {
